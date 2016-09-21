@@ -24,6 +24,11 @@
  *    Christian Gmeiner <christian.gmeiner@gmail.com>
  */
 
+#include <sys/stat.h>
+
+#include "util/u_hash_table.h"
+#include "util/u_memory.h"
+
 #include "etnaviv/etnaviv_screen.h"
 #include "etnaviv_drm_public.h"
 
@@ -38,7 +43,7 @@ etna_drm_screen_create_fd(int fd, struct renderonly *ro)
    uint64_t val;
    int i;
 
-   dev = etna_device_new(fd);
+   dev = etna_device_new_dup(fd);
    if (!dev) {
       fprintf(stderr, "Error creating device\n");
       return NULL;
@@ -97,8 +102,83 @@ static const struct renderonly_ops etna_native_ro_ops = {
    .create = etna_drm_screen_create_native
 };
 
+static struct util_hash_table *etna_tab = NULL;
+
+pipe_static_mutex(etna_screen_mutex);
+
+static void
+etna_drm_screen_destroy(struct pipe_screen *pscreen)
+{
+    struct etna_screen *screen = etna_screen(pscreen);
+    boolean destroy;
+
+    pipe_mutex_lock(etna_screen_mutex);
+    destroy = --screen->refcnt == 0;
+    if (destroy) {
+        int fd = etna_device_fd(screen->dev);
+        util_hash_table_remove(etna_tab, intptr_to_pointer(fd));
+    }
+    pipe_mutex_unlock(etna_screen_mutex);
+
+    if (destroy) {
+        pscreen->destroy = screen->winsys_priv;
+        pscreen->destroy(pscreen);
+    }
+}
+
+static unsigned hash_fd(void *key)
+{
+    int fd = pointer_to_intptr(key);
+    struct stat stat;
+    fstat(fd, &stat);
+
+    return stat.st_dev ^ stat.st_ino ^ stat.st_rdev;
+}
+
+static int compare_fd(void *key1, void *key2)
+{
+    int fd1 = pointer_to_intptr(key1);
+    int fd2 = pointer_to_intptr(key2);
+    struct stat stat1, stat2;
+    fstat(fd1, &stat1);
+    fstat(fd2, &stat2);
+
+    return stat1.st_dev != stat2.st_dev ||
+            stat1.st_ino != stat2.st_ino ||
+            stat1.st_rdev != stat2.st_rdev;
+}
+
 struct pipe_screen *
 etna_drm_screen_create(int fd)
 {
-   return renderonly_screen_create(fd, &etna_native_ro_ops, NULL);
+    struct pipe_screen *pscreen = NULL;
+
+    pipe_mutex_lock(etna_screen_mutex);
+    if (!etna_tab) {
+        etna_tab = util_hash_table_create(hash_fd, compare_fd);
+        if (!etna_tab)
+            goto unlock;
+    }
+
+    pscreen = util_hash_table_get(etna_tab, intptr_to_pointer(fd));
+    if (pscreen) {
+        etna_screen(pscreen)->refcnt++;
+    } else {
+        pscreen = renderonly_screen_create(fd, &etna_native_ro_ops, NULL);
+        if (pscreen) {
+            int fd = etna_device_fd(etna_screen(pscreen)->dev);
+            util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);
+
+            /* Bit of a hack, to avoid circular linkage dependency,
+             * ie. pipe driver having to call in to winsys, we
+             * override the pipe drivers screen->destroy():
+             */
+            etna_screen(pscreen)->winsys_priv = pscreen->destroy;
+            pscreen->destroy = etna_drm_screen_destroy;
+        }
+    }
+
+unlock:
+    pipe_mutex_unlock(etna_screen_mutex);
+    return pscreen;
 }
