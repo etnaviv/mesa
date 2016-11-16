@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  19701 bytes, from 2016-11-13 13:47:18)
-- common.xml    (  23344 bytes, from 2016-11-13 13:47:18)
-- state_hi.xml  (  25653 bytes, from 2016-11-13 13:46:17)
-- copyright.xml (   1597 bytes, from 2016-11-13 13:46:17)
-- state_2d.xml  (  51552 bytes, from 2016-11-13 13:46:17)
-- state_3d.xml  (  55854 bytes, from 2016-11-13 13:47:18)
-- state_vg.xml  (   5975 bytes, from 2016-11-13 13:46:17)
+- state.xml     (  19792 bytes, from 2016-11-16 18:54:37)
+- common.xml    (  23422 bytes, from 2016-11-16 18:54:37)
+- state_hi.xml  (  25653 bytes, from 2016-10-02 14:26:13)
+- copyright.xml (   1597 bytes, from 2016-10-02 14:26:13)
+- state_2d.xml  (  51552 bytes, from 2016-10-02 14:26:13)
+- state_3d.xml  (  57579 bytes, from 2016-11-16 18:54:37)
+- state_vg.xml  (   5975 bytes, from 2016-10-02 14:26:13)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -311,7 +311,7 @@ DEALINGS IN THE SOFTWARE.
 #define chipMinorFeatures5_UNK24				0x01000000
 #define chipMinorFeatures5_UNK25				0x02000000
 #define chipMinorFeatures5_UNK26				0x04000000
-#define chipMinorFeatures5_DEPTHSTENCIL_NATIVE_SUPPORT		0x08000000
+#define chipMinorFeatures5_RS_DEPTHSTENCIL_NATIVE_SUPPORT	0x08000000
 #define chipMinorFeatures5_V2_MSAA_COMP_FIX			0x10000000
 #define chipMinorFeatures5_UNK29				0x20000000
 #define chipMinorFeatures5_UNK30				0x40000000
