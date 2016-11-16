@@ -114,7 +114,7 @@ etna_zsa_state_create(struct pipe_context *pctx,
    cs->PE_STENCIL_CONFIG =
       translate_stencil_mode(so->stencil[0].enabled, so->stencil[1].enabled) |
       VIVS_PE_STENCIL_CONFIG_MASK_FRONT(so->stencil[0].valuemask) |
-      VIVS_PE_STENCIL_CONFIG_WRITE_MASK(so->stencil[0].writemask);
+      VIVS_PE_STENCIL_CONFIG_WRITE_MASK_FRONT(so->stencil[0].writemask);
    /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
    /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
 
