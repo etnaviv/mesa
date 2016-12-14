@@ -37,7 +37,7 @@
 #include "util/u_memory.h"
 
 struct pipe_screen *
-renderonly_screen_create(int fd, const struct renderonly_ops *ops, void *priv)
+renderonly_screen_create(int fd, const struct renderonly_ops *ops)
 {
    struct renderonly *ro;
 
@@ -47,7 +47,6 @@ renderonly_screen_create(int fd, const struct renderonly_ops *ops, void *priv)
 
    ro->kms_fd = fd;
    ro->ops = ops;
-   ro->priv = priv;
 
    ro->screen = ops->create(ro);
    if (!ro->screen)

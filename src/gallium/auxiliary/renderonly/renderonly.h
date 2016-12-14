@@ -43,11 +43,10 @@ struct renderonly {
    int kms_fd;
    const struct renderonly_ops *ops;
    struct pipe_screen *screen;
-   void *priv;
 };
 
 struct pipe_screen *
-renderonly_screen_create(int fd, const struct renderonly_ops *ops, void *priv);
+renderonly_screen_create(int fd, const struct renderonly_ops *ops);
 
 struct renderonly_scanout {
    uint32_t handle;

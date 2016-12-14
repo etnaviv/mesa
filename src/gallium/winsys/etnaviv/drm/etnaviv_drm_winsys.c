@@ -164,7 +164,7 @@ etna_drm_screen_create(int fd)
     if (pscreen) {
         etna_screen(pscreen)->refcnt++;
     } else {
-        pscreen = renderonly_screen_create(fd, &etna_native_ro_ops, NULL);
+        pscreen = renderonly_screen_create(fd, &etna_native_ro_ops);
         if (pscreen) {
             int fd = etna_device_fd(etna_screen(pscreen)->dev);
             util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);

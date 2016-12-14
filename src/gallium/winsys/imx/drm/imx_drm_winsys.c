@@ -37,5 +37,5 @@ static const struct renderonly_ops ro_ops = {
 
 struct pipe_screen *imx_drm_screen_create(int fd)
 {
-   return renderonly_screen_create(fd, &ro_ops, NULL);
+   return renderonly_screen_create(fd, &ro_ops);
 }
