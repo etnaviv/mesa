@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#include "../../imx/drm/imx_drm_public.h"
-#include "../winsys/etnaviv/drm/etnaviv_drm_public.h"
+#include "imx_drm_public.h"
+#include "etnaviv/drm/etnaviv_drm_public.h"
 #include "renderonly/renderonly.h"
 
 static struct pipe_screen *imx_open_render_node(struct renderonly *ro)
