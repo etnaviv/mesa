@@ -64,6 +64,7 @@ static bool
 use_kms_bumb_buffer(struct renderonly_scanout *scanout,
       struct pipe_resource *rsc, struct renderonly *ro)
 {
+   struct pipe_screen *screen = rsc->screen;
    struct winsys_handle handle;
    int prime_fd, err;
    struct drm_mode_create_dumb create_dumb = {
@@ -97,7 +98,7 @@ use_kms_bumb_buffer(struct renderonly_scanout *scanout,
    handle.handle = prime_fd;
    handle.stride = create_dumb.pitch;
 
-   scanout->prime = ro->screen->resource_from_handle(ro->screen, rsc,
+   scanout->prime = screen->resource_from_handle(screen, rsc,
          &handle, PIPE_HANDLE_USAGE_READ_WRITE);
 
    if (!scanout->prime) {
@@ -118,7 +119,7 @@ static bool
 import_gpu_scanout(struct renderonly_scanout *scanout,
       struct pipe_resource *rsc, struct renderonly *ro)
 {
-   struct pipe_screen *screen = ro->screen;
+   struct pipe_screen *screen = rsc->screen;
    boolean status;
    int fd, err;
    struct winsys_handle handle = {
