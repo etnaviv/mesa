@@ -38,6 +38,7 @@ struct renderonly_ops {
    int (*tiling)(int fd, uint32_t handle);
    bool intermediate_rendering;
    int kms_fd;
+   int gpu_fd;
 };
 
 struct renderonly {

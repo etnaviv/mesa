@@ -71,7 +71,7 @@ struct pipe_screen *
 etna_drm_screen_create_native(struct renderonly *ro)
 {
    struct pipe_screen *screen;
-   int fd = ro->ops.kms_fd;
+   int fd = ro->ops.gpu_fd;
 
    screen = etna_drm_screen_create_fd(fd, ro);
    if (!screen)
@@ -150,7 +150,8 @@ etna_drm_screen_create(int fd)
     struct pipe_screen *pscreen = NULL;
     struct renderonly_ops etna_native_ro_ops = {
        .create = etna_drm_screen_create_native,
-       .kms_fd = fd
+       .kms_fd = -1,
+       .gpu_fd = fd
     };
 
     pipe_mutex_lock(etna_screen_mutex);
