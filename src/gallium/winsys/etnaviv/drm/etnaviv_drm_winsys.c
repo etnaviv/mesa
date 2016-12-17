@@ -36,14 +36,14 @@
 #include <stdio.h>
 
 static struct pipe_screen *
-etna_drm_screen_create_fd(int fd, struct renderonly *ro)
+etna_drm_screen_create_fd(struct renderonly *ro)
 {
    struct etna_device *dev;
    struct etna_gpu *gpu;
    uint64_t val;
    int i;
 
-   dev = etna_device_new_dup(fd);
+   dev = etna_device_new_dup(ro->ops.gpu_fd);
    if (!dev) {
       fprintf(stderr, "Error creating device\n");
       return NULL;
@@ -71,9 +71,8 @@ struct pipe_screen *
 etna_drm_screen_create_native(struct renderonly *ro)
 {
    struct pipe_screen *screen;
-   int fd = ro->ops.gpu_fd;
 
-   screen = etna_drm_screen_create_fd(fd, ro);
+   screen = etna_drm_screen_create_fd(ro);
    if (!screen)
       return NULL;
 
@@ -84,14 +83,10 @@ struct pipe_screen *
 etna_drm_screen_create_rendernode(struct renderonly *ro)
 {
    struct pipe_screen *screen;
-   int fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC);
 
-   if (fd == -1)
-      return NULL;
-
-   screen = etna_drm_screen_create_fd(fd, ro);
+   screen = etna_drm_screen_create_fd(ro);
    if (!screen) {
-      close(fd);
+      close(ro->ops.gpu_fd);
       return NULL;
    }
 
