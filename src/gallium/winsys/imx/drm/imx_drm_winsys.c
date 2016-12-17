@@ -30,12 +30,12 @@ static struct pipe_screen *imx_open_render_node(struct renderonly *ro)
    return etna_drm_screen_create_rendernode(ro);
 }
 
-static const struct renderonly_ops ro_ops = {
-   .create = imx_open_render_node,
-   .intermediate_rendering = true
-};
-
 struct pipe_screen *imx_drm_screen_create(int fd)
 {
+   struct renderonly_ops ro_ops = {
+      .create = imx_open_render_node,
+      .intermediate_rendering = true
+   };
+
    return renderonly_screen_create(fd, &ro_ops);
 }
