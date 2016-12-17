@@ -98,10 +98,6 @@ etna_drm_screen_create_rendernode(struct renderonly *ro)
    return screen;
 }
 
-static const struct renderonly_ops etna_native_ro_ops = {
-   .create = etna_drm_screen_create_native
-};
-
 static struct util_hash_table *etna_tab = NULL;
 
 pipe_static_mutex(etna_screen_mutex);
@@ -152,6 +148,9 @@ struct pipe_screen *
 etna_drm_screen_create(int fd)
 {
     struct pipe_screen *pscreen = NULL;
+    struct renderonly_ops etna_native_ro_ops = {
+       .create = etna_drm_screen_create_native
+    };
 
     pipe_mutex_lock(etna_screen_mutex);
     if (!etna_tab) {
