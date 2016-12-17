@@ -37,16 +37,16 @@ struct renderonly_ops {
    struct pipe_screen *(*create)(struct renderonly *ctx);
    int (*tiling)(int fd, uint32_t handle);
    bool intermediate_rendering;
+   int kms_fd;
 };
 
 struct renderonly {
-   int kms_fd;
    struct renderonly_ops ops;
    struct pipe_screen *screen;
 };
 
 struct pipe_screen *
-renderonly_screen_create(int fd, const struct renderonly_ops *ops);
+renderonly_screen_create(const struct renderonly_ops *ops);
 
 struct renderonly_scanout {
    uint32_t handle;

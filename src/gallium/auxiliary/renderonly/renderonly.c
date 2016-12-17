@@ -37,7 +37,7 @@
 #include "util/u_memory.h"
 
 struct pipe_screen *
-renderonly_screen_create(int fd, const struct renderonly_ops *ops)
+renderonly_screen_create(const struct renderonly_ops *ops)
 {
    struct renderonly *ro;
 
@@ -45,7 +45,6 @@ renderonly_screen_create(int fd, const struct renderonly_ops *ops)
    if (!ro)
       return NULL;
 
-   ro->kms_fd = fd;
    memcpy(&ro->ops, ops, sizeof(*ops));
 
    ro->screen = ops->create(ro);
@@ -75,7 +74,7 @@ use_kms_bumb_buffer(struct renderonly_scanout *scanout,
    struct drm_mode_destroy_dumb destroy_dumb = { };
 
    /* create dumb buffer at scanout GPU */
-   err = ioctl(ro->kms_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
+   err = ioctl(ro->ops.kms_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
    if (err < 0) {
       fprintf(stderr, "DRM_IOCTL_MODE_CREATE_DUMB failed: %s\n",
             strerror(errno));
@@ -86,7 +85,7 @@ use_kms_bumb_buffer(struct renderonly_scanout *scanout,
    scanout->stride = create_dumb.pitch;
 
    /* export dumb buffer */
-   err = drmPrimeHandleToFD(ro->kms_fd, create_dumb.handle, O_CLOEXEC,
+   err = drmPrimeHandleToFD(ro->ops.kms_fd, create_dumb.handle, O_CLOEXEC,
          &prime_fd);
    if (err < 0) {
       fprintf(stderr, "failed to export dumb buffer: %s\n", strerror(errno));
@@ -110,7 +109,7 @@ use_kms_bumb_buffer(struct renderonly_scanout *scanout,
 
 out_free_dumb:
    destroy_dumb.handle = scanout->handle;
-   ioctl(ro->kms_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+   ioctl(ro->ops.kms_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
 
    return false;
 }
@@ -134,7 +133,7 @@ import_gpu_scanout(struct renderonly_scanout *scanout,
    scanout->stride = handle.stride;
    fd = handle.handle;
 
-   err = drmPrimeFDToHandle(ro->kms_fd, fd, &scanout->handle);
+   err = drmPrimeFDToHandle(ro->ops.kms_fd, fd, &scanout->handle);
    close(fd);
 
    if (err < 0) {
@@ -143,7 +142,7 @@ import_gpu_scanout(struct renderonly_scanout *scanout,
    }
 
    if (ro->ops.tiling) {
-      err = ro->ops.tiling(ro->kms_fd, scanout->handle);
+      err = ro->ops.tiling(ro->ops.kms_fd, scanout->handle);
       if (err < 0) {
          fprintf(stderr, "failed to set tiling parameters: %s\n", strerror(errno));
          close(scanout->handle);

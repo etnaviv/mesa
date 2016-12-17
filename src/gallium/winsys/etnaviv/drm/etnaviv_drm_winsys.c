@@ -71,7 +71,7 @@ struct pipe_screen *
 etna_drm_screen_create_native(struct renderonly *ro)
 {
    struct pipe_screen *screen;
-   int fd = ro->kms_fd;
+   int fd = ro->ops.kms_fd;
 
    screen = etna_drm_screen_create_fd(fd, ro);
    if (!screen)
@@ -149,7 +149,8 @@ etna_drm_screen_create(int fd)
 {
     struct pipe_screen *pscreen = NULL;
     struct renderonly_ops etna_native_ro_ops = {
-       .create = etna_drm_screen_create_native
+       .create = etna_drm_screen_create_native,
+       .kms_fd = fd
     };
 
     pipe_mutex_lock(etna_screen_mutex);
@@ -163,7 +164,7 @@ etna_drm_screen_create(int fd)
     if (pscreen) {
         etna_screen(pscreen)->refcnt++;
     } else {
-        pscreen = renderonly_screen_create(fd, &etna_native_ro_ops);
+        pscreen = renderonly_screen_create(&etna_native_ro_ops);
         if (pscreen) {
             int fd = etna_device_fd(etna_screen(pscreen)->dev);
             util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);

@@ -34,8 +34,9 @@ struct pipe_screen *imx_drm_screen_create(int fd)
 {
    struct renderonly_ops ro_ops = {
       .create = imx_open_render_node,
-      .intermediate_rendering = true
+      .intermediate_rendering = true,
+      .kms_fd = fd
    };
 
-   return renderonly_screen_create(fd, &ro_ops);
+   return renderonly_screen_create(&ro_ops);
 }
