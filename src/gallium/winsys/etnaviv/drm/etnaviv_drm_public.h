@@ -31,9 +31,6 @@ struct pipe_screen;
 struct renderonly;
 
 struct pipe_screen *
-etna_drm_screen_create_native(struct renderonly *ro);
-
-struct pipe_screen *
 etna_drm_screen_create_rendernode(struct renderonly *ro);
 
 struct pipe_screen *

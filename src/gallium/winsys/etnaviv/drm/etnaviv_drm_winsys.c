@@ -67,7 +67,7 @@ etna_drm_screen_create_renderonly(struct renderonly *ro)
    return etna_screen_create(dev, gpu, ro);
 }
 
-struct pipe_screen *
+static struct pipe_screen *
 etna_drm_screen_create_native(struct renderonly *ro)
 {
    struct pipe_screen *screen;
