@@ -46,7 +46,7 @@ renderonly_screen_create(int fd, const struct renderonly_ops *ops)
       return NULL;
 
    ro->kms_fd = fd;
-   ro->ops = ops;
+   memcpy(&ro->ops, ops, sizeof(*ops));
 
    ro->screen = ops->create(ro);
    if (!ro->screen)
@@ -142,8 +142,8 @@ import_gpu_scanout(struct renderonly_scanout *scanout,
       return false;
    }
 
-   if (ro->ops->tiling) {
-      err = ro->ops->tiling(ro->kms_fd, scanout->handle);
+   if (ro->ops.tiling) {
+      err = ro->ops.tiling(ro->kms_fd, scanout->handle);
       if (err < 0) {
          fprintf(stderr, "failed to set tiling parameters: %s\n", strerror(errno));
          close(scanout->handle);
@@ -164,7 +164,7 @@ renderonly_scanout_for_resource(struct pipe_resource *rsc, struct renderonly *ro
    if (!scanout)
       return NULL;
 
-   if (ro->ops->intermediate_rendering)
+   if (ro->ops.intermediate_rendering)
        ret = use_kms_bumb_buffer(scanout, rsc, ro);
    else
        ret = import_gpu_scanout(scanout, rsc, ro);

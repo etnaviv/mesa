@@ -41,7 +41,7 @@ struct renderonly_ops {
 
 struct renderonly {
    int kms_fd;
-   const struct renderonly_ops *ops;
+   struct renderonly_ops ops;
    struct pipe_screen *screen;
 };
 
