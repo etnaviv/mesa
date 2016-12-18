@@ -32,7 +32,6 @@
 #include "etnaviv/etnaviv_screen.h"
 #include "etnaviv_drm_public.h"
 
-#include <fcntl.h>
 #include <stdio.h>
 
 static struct pipe_screen *
@@ -58,7 +57,7 @@ screen_create(struct renderonly *ro)
 
       /* Look for a 3D capable GPU */
       if (etna_gpu_get_param(gpu, ETNA_GPU_FEATURES_0, &val) == 0 &&
-          val & (1 << 2))
+            val & (1 << 2))
          break;
 
       etna_gpu_del(gpu);
@@ -74,43 +73,45 @@ pipe_static_mutex(etna_screen_mutex);
 static void
 etna_drm_screen_destroy(struct pipe_screen *pscreen)
 {
-    struct etna_screen *screen = etna_screen(pscreen);
-    boolean destroy;
+   struct etna_screen *screen = etna_screen(pscreen);
+   boolean destroy;
 
-    pipe_mutex_lock(etna_screen_mutex);
-    destroy = --screen->refcnt == 0;
-    if (destroy) {
-        int fd = etna_device_fd(screen->dev);
-        util_hash_table_remove(etna_tab, intptr_to_pointer(fd));
-    }
-    pipe_mutex_unlock(etna_screen_mutex);
+   pipe_mutex_lock(etna_screen_mutex);
+   destroy = --screen->refcnt == 0;
+   if (destroy) {
+      int fd = etna_device_fd(screen->dev);
+      util_hash_table_remove(etna_tab, intptr_to_pointer(fd));
+   }
+   pipe_mutex_unlock(etna_screen_mutex);
 
-    if (destroy) {
-        pscreen->destroy = screen->winsys_priv;
-        pscreen->destroy(pscreen);
-    }
+   if (destroy) {
+      pscreen->destroy = screen->winsys_priv;
+      pscreen->destroy(pscreen);
+   }
 }
 
 static unsigned hash_fd(void *key)
 {
-    int fd = pointer_to_intptr(key);
-    struct stat stat;
-    fstat(fd, &stat);
+   int fd = pointer_to_intptr(key);
+   struct stat stat;
 
-    return stat.st_dev ^ stat.st_ino ^ stat.st_rdev;
+   fstat(fd, &stat);
+
+   return stat.st_dev ^ stat.st_ino ^ stat.st_rdev;
 }
 
 static int compare_fd(void *key1, void *key2)
 {
-    int fd1 = pointer_to_intptr(key1);
-    int fd2 = pointer_to_intptr(key2);
-    struct stat stat1, stat2;
-    fstat(fd1, &stat1);
-    fstat(fd2, &stat2);
+   int fd1 = pointer_to_intptr(key1);
+   int fd2 = pointer_to_intptr(key2);
+   struct stat stat1, stat2;
 
-    return stat1.st_dev != stat2.st_dev ||
-            stat1.st_ino != stat2.st_ino ||
-            stat1.st_rdev != stat2.st_rdev;
+   fstat(fd1, &stat1);
+   fstat(fd2, &stat2);
+
+   return stat1.st_dev != stat2.st_dev ||
+          stat1.st_ino != stat2.st_ino ||
+          stat1.st_rdev != stat2.st_rdev;
 }
 
 struct pipe_screen *
@@ -120,27 +121,26 @@ etna_drm_screen_create_renderonly(struct renderonly *ro)
 
    pipe_mutex_lock(etna_screen_mutex);
    if (!etna_tab) {
-       etna_tab = util_hash_table_create(hash_fd, compare_fd);
-       if (!etna_tab)
-           goto unlock;
+      etna_tab = util_hash_table_create(hash_fd, compare_fd);
+      if (!etna_tab)
+         goto unlock;
    }
 
    pscreen = util_hash_table_get(etna_tab, intptr_to_pointer(ro->gpu_fd));
    if (pscreen) {
-       etna_screen(pscreen)->refcnt++;
+      etna_screen(pscreen)->refcnt++;
    } else {
-       pscreen = screen_create(ro);
-       if (pscreen) {
-           int fd = etna_device_fd(etna_screen(pscreen)->dev);
-           util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);
+      pscreen = screen_create(ro);
+      if (pscreen) {
+         int fd = etna_device_fd(etna_screen(pscreen)->dev);
+         util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);
 
-           /* Bit of a hack, to avoid circular linkage dependency,
-            * ie. pipe driver having to call in to winsys, we
-            * override the pipe drivers screen->destroy():
-            */
-           etna_screen(pscreen)->winsys_priv = pscreen->destroy;
-           pscreen->destroy = etna_drm_screen_destroy;
-       }
+         /* Bit of a hack, to avoid circular linkage dependency,
+         * ie. pipe driver having to call in to winsys, we
+         * override the pipe drivers screen->destroy() */
+         etna_screen(pscreen)->winsys_priv = pscreen->destroy;
+      pscreen->destroy = etna_drm_screen_destroy;
+      }
    }
 
 unlock:
@@ -151,10 +151,10 @@ unlock:
 struct pipe_screen *
 etna_drm_screen_create(int fd)
 {
-    struct renderonly ro = {
-       .kms_fd = -1,
-       .gpu_fd = fd
-    };
+   struct renderonly ro = {
+      .kms_fd = -1,
+      .gpu_fd = fd
+   };
 
-    return etna_drm_screen_create_renderonly(&ro);
+   return etna_drm_screen_create_renderonly(&ro);
 }
