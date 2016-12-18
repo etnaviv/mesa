@@ -39,7 +39,7 @@ struct renderonly {
 };
 
 struct renderonly *
-renderonly_create(const struct renderonly *ro);
+renderonly_dup(const struct renderonly *ro);
 
 struct renderonly_scanout {
    uint32_t handle;

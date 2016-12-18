@@ -37,7 +37,7 @@
 #include "util/u_memory.h"
 
 struct renderonly *
-renderonly_create(const struct renderonly *ro)
+renderonly_dup(const struct renderonly *ro)
 {
    struct renderonly *copy;
 
