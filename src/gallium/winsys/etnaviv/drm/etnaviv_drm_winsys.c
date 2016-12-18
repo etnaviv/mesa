@@ -79,20 +79,6 @@ etna_drm_screen_create_native(struct renderonly *ro)
    return screen;
 }
 
-struct pipe_screen *
-etna_drm_screen_create_rendernode(struct renderonly *ro)
-{
-   struct pipe_screen *screen;
-
-   screen = screen_create_renderonly(ro);
-   if (!screen) {
-      close(ro->ops.gpu_fd);
-      return NULL;
-   }
-
-   return screen;
-}
-
 static struct util_hash_table *etna_tab = NULL;
 
 pipe_static_mutex(etna_screen_mutex);
@@ -137,6 +123,20 @@ static int compare_fd(void *key1, void *key2)
     return stat1.st_dev != stat2.st_dev ||
             stat1.st_ino != stat2.st_ino ||
             stat1.st_rdev != stat2.st_rdev;
+}
+
+struct pipe_screen *
+etna_drm_screen_create_rendernode(struct renderonly *ro)
+{
+   struct pipe_screen *screen;
+
+   screen = screen_create_renderonly(ro);
+   if (!screen) {
+      close(ro->ops.gpu_fd);
+      return NULL;
+   }
+
+   return screen;
 }
 
 struct pipe_screen *
