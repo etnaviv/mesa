@@ -36,14 +36,14 @@
 #include <stdio.h>
 
 static struct pipe_screen *
-screen_create_renderonly(struct renderonly *ro)
+screen_create(struct renderonly_ops *ops)
 {
    struct etna_device *dev;
    struct etna_gpu *gpu;
    uint64_t val;
    int i;
 
-   dev = etna_device_new_dup(ro->ops.gpu_fd);
+   dev = etna_device_new_dup(ops->gpu_fd);
    if (!dev) {
       fprintf(stderr, "Error creating device\n");
       return NULL;
@@ -64,19 +64,7 @@ screen_create_renderonly(struct renderonly *ro)
       etna_gpu_del(gpu);
    }
 
-   return etna_screen_create(dev, gpu, ro);
-}
-
-static struct pipe_screen *
-etna_drm_screen_create_native(struct renderonly *ro)
-{
-   struct pipe_screen *screen;
-
-   screen = screen_create_renderonly(ro);
-   if (!screen)
-      return NULL;
-
-   return screen;
+   return etna_screen_create(dev, gpu, ops);
 }
 
 static struct util_hash_table *etna_tab = NULL;
@@ -126,55 +114,47 @@ static int compare_fd(void *key1, void *key2)
 }
 
 struct pipe_screen *
-etna_drm_screen_create_rendernode(struct renderonly *ro)
+etna_drm_screen_create_rendernode(struct renderonly_ops *ops)
 {
-   struct pipe_screen *screen;
+   struct pipe_screen *pscreen;
 
-   screen = screen_create_renderonly(ro);
-   if (!screen) {
-      close(ro->ops.gpu_fd);
-      return NULL;
+   pipe_mutex_lock(etna_screen_mutex);
+   if (!etna_tab) {
+       etna_tab = util_hash_table_create(hash_fd, compare_fd);
+       if (!etna_tab)
+           goto unlock;
    }
 
-   return screen;
+   pscreen = util_hash_table_get(etna_tab, intptr_to_pointer(ops->gpu_fd));
+   if (pscreen) {
+       etna_screen(pscreen)->refcnt++;
+   } else {
+       pscreen = screen_create(ops);
+       if (pscreen) {
+           int fd = etna_device_fd(etna_screen(pscreen)->dev);
+           util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);
+
+           /* Bit of a hack, to avoid circular linkage dependency,
+            * ie. pipe driver having to call in to winsys, we
+            * override the pipe drivers screen->destroy():
+            */
+           etna_screen(pscreen)->winsys_priv = pscreen->destroy;
+           pscreen->destroy = etna_drm_screen_destroy;
+       }
+   }
+
+unlock:
+   pipe_mutex_unlock(etna_screen_mutex);
+   return pscreen;
 }
 
 struct pipe_screen *
 etna_drm_screen_create(int fd)
 {
-    struct pipe_screen *pscreen = NULL;
-    struct renderonly_ops etna_native_ro_ops = {
-       .create = etna_drm_screen_create_native,
+    struct renderonly_ops ro_ops = {
        .kms_fd = -1,
        .gpu_fd = fd
     };
 
-    pipe_mutex_lock(etna_screen_mutex);
-    if (!etna_tab) {
-        etna_tab = util_hash_table_create(hash_fd, compare_fd);
-        if (!etna_tab)
-            goto unlock;
-    }
-
-    pscreen = util_hash_table_get(etna_tab, intptr_to_pointer(fd));
-    if (pscreen) {
-        etna_screen(pscreen)->refcnt++;
-    } else {
-        pscreen = renderonly_screen_create(&etna_native_ro_ops);
-        if (pscreen) {
-            int fd = etna_device_fd(etna_screen(pscreen)->dev);
-            util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);
-
-            /* Bit of a hack, to avoid circular linkage dependency,
-             * ie. pipe driver having to call in to winsys, we
-             * override the pipe drivers screen->destroy():
-             */
-            etna_screen(pscreen)->winsys_priv = pscreen->destroy;
-            pscreen->destroy = etna_drm_screen_destroy;
-        }
-    }
-
-unlock:
-    pipe_mutex_unlock(etna_screen_mutex);
-    return pscreen;
+    return etna_drm_screen_create_rendernode(&ro_ops);
 }

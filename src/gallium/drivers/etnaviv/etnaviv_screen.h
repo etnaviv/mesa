@@ -89,6 +89,7 @@ etna_screen_bo_from_handle(struct pipe_screen *pscreen,
                            struct winsys_handle *whandle, unsigned *out_stride);
 
 struct pipe_screen *
-etna_screen_create(struct etna_device *dev, struct etna_gpu *gpu, struct renderonly *ro);
+etna_screen_create(struct etna_device *dev, struct etna_gpu *gpu,
+                   struct renderonly_ops *ops);
 
 #endif

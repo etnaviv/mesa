@@ -28,15 +28,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static struct pipe_screen *imx_open_render_node(struct renderonly *ro)
-{
-   return etna_drm_screen_create_rendernode(ro);
-}
-
 struct pipe_screen *imx_drm_screen_create(int fd)
 {
    struct renderonly_ops ro_ops = {
-      .create = imx_open_render_node,
       .intermediate_rendering = true,
       .kms_fd = fd,
       .gpu_fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC)
@@ -45,7 +39,7 @@ struct pipe_screen *imx_drm_screen_create(int fd)
    if (ro_ops.gpu_fd < 0)
       return NULL;
 
-   struct pipe_screen *screen = renderonly_screen_create(&ro_ops);
+   struct pipe_screen *screen = etna_drm_screen_create_rendernode(&ro_ops);
    if (!screen)
       close(ro_ops.gpu_fd);
 

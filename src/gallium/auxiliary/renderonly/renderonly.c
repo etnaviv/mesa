@@ -50,29 +50,6 @@ renderonly_create(const struct renderonly_ops *ops)
    return ro;
 }
 
-struct pipe_screen *
-renderonly_screen_create(const struct renderonly_ops *ops)
-{
-   struct renderonly *ro;
-
-   ro = CALLOC_STRUCT(renderonly);
-   if (!ro)
-      return NULL;
-
-   memcpy(&ro->ops, ops, sizeof(*ops));
-
-   ro->screen = ops->create(ro);
-   if (!ro->screen)
-      goto cleanup;
-
-   return ro->screen;
-
-cleanup:
-   FREE(ro);
-
-   return NULL;
-}
-
 static bool
 use_kms_bumb_buffer(struct renderonly_scanout *scanout,
       struct pipe_resource *rsc, struct renderonly *ro)
