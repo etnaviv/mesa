@@ -31,7 +31,7 @@ struct pipe_screen;
 struct renderonly_ops;
 
 struct pipe_screen *
-etna_drm_screen_create_rendernode(struct renderonly_ops *ops);
+etna_drm_screen_create_renderonly(struct renderonly_ops *ops);
 
 struct pipe_screen *
 etna_drm_screen_create(int fd);

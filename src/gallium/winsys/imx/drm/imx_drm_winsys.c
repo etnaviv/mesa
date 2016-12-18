@@ -39,7 +39,7 @@ struct pipe_screen *imx_drm_screen_create(int fd)
    if (ro_ops.gpu_fd < 0)
       return NULL;
 
-   struct pipe_screen *screen = etna_drm_screen_create_rendernode(&ro_ops);
+   struct pipe_screen *screen = etna_drm_screen_create_renderonly(&ro_ops);
    if (!screen)
       close(ro_ops.gpu_fd);
 

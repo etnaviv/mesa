@@ -114,7 +114,7 @@ static int compare_fd(void *key1, void *key2)
 }
 
 struct pipe_screen *
-etna_drm_screen_create_rendernode(struct renderonly_ops *ops)
+etna_drm_screen_create_renderonly(struct renderonly_ops *ops)
 {
    struct pipe_screen *pscreen;
 
@@ -156,5 +156,5 @@ etna_drm_screen_create(int fd)
        .gpu_fd = fd
     };
 
-    return etna_drm_screen_create_rendernode(&ro_ops);
+    return etna_drm_screen_create_renderonly(&ro_ops);
 }
