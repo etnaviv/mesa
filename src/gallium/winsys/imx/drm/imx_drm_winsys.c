@@ -30,18 +30,18 @@
 
 struct pipe_screen *imx_drm_screen_create(int fd)
 {
-   struct renderonly_ops ro_ops = {
+   struct renderonly ro = {
       .intermediate_rendering = true,
       .kms_fd = fd,
       .gpu_fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC)
    };
 
-   if (ro_ops.gpu_fd < 0)
+   if (ro.gpu_fd < 0)
       return NULL;
 
-   struct pipe_screen *screen = etna_drm_screen_create_renderonly(&ro_ops);
+   struct pipe_screen *screen = etna_drm_screen_create_renderonly(&ro);
    if (!screen)
-      close(ro_ops.gpu_fd);
+      close(ro.gpu_fd);
 
    return screen;
 }

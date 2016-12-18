@@ -37,17 +37,17 @@
 #include "util/u_memory.h"
 
 struct renderonly *
-renderonly_create(const struct renderonly_ops *ops)
+renderonly_create(const struct renderonly *ro)
 {
-   struct renderonly *ro;
+   struct renderonly *copy;
 
-   ro = CALLOC_STRUCT(renderonly);
-   if (!ro)
+   copy = CALLOC_STRUCT(renderonly);
+   if (!copy)
       return NULL;
 
-   memcpy(&ro->ops, ops, sizeof(*ops));
+   memcpy(copy, ro, sizeof(*ro));
 
-   return ro;
+   return copy;
 }
 
 static bool
@@ -65,7 +65,7 @@ use_kms_bumb_buffer(struct renderonly_scanout *scanout,
    struct drm_mode_destroy_dumb destroy_dumb = { };
 
    /* create dumb buffer at scanout GPU */
-   err = ioctl(ro->ops.kms_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
+   err = ioctl(ro->kms_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
    if (err < 0) {
       fprintf(stderr, "DRM_IOCTL_MODE_CREATE_DUMB failed: %s\n",
             strerror(errno));
@@ -76,7 +76,7 @@ use_kms_bumb_buffer(struct renderonly_scanout *scanout,
    scanout->stride = create_dumb.pitch;
 
    /* export dumb buffer */
-   err = drmPrimeHandleToFD(ro->ops.kms_fd, create_dumb.handle, O_CLOEXEC,
+   err = drmPrimeHandleToFD(ro->kms_fd, create_dumb.handle, O_CLOEXEC,
          &prime_fd);
    if (err < 0) {
       fprintf(stderr, "failed to export dumb buffer: %s\n", strerror(errno));
@@ -100,7 +100,7 @@ use_kms_bumb_buffer(struct renderonly_scanout *scanout,
 
 out_free_dumb:
    destroy_dumb.handle = scanout->handle;
-   ioctl(ro->ops.kms_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+   ioctl(ro->kms_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
 
    return false;
 }
@@ -124,7 +124,7 @@ import_gpu_scanout(struct renderonly_scanout *scanout,
    scanout->stride = handle.stride;
    fd = handle.handle;
 
-   err = drmPrimeFDToHandle(ro->ops.kms_fd, fd, &scanout->handle);
+   err = drmPrimeFDToHandle(ro->kms_fd, fd, &scanout->handle);
    close(fd);
 
    if (err < 0) {
@@ -132,8 +132,8 @@ import_gpu_scanout(struct renderonly_scanout *scanout,
       return false;
    }
 
-   if (ro->ops.tiling) {
-      err = ro->ops.tiling(ro->ops.kms_fd, scanout->handle);
+   if (ro->tiling) {
+      err = ro->tiling(ro->kms_fd, scanout->handle);
       if (err < 0) {
          fprintf(stderr, "failed to set tiling parameters: %s\n", strerror(errno));
          close(scanout->handle);
@@ -154,7 +154,7 @@ renderonly_scanout_for_resource(struct pipe_resource *rsc, struct renderonly *ro
    if (!scanout)
       return NULL;
 
-   if (ro->ops.intermediate_rendering)
+   if (ro->intermediate_rendering)
        ret = use_kms_bumb_buffer(scanout, rsc, ro);
    else
        ret = import_gpu_scanout(scanout, rsc, ro);

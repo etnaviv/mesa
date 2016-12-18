@@ -31,21 +31,15 @@
 #include "state_tracker/drm_driver.h"
 #include "pipe/p_state.h"
 
-struct renderonly;
-
-struct renderonly_ops {
+struct renderonly {
    int (*tiling)(int fd, uint32_t handle);
    bool intermediate_rendering;
    int kms_fd;
    int gpu_fd;
 };
 
-struct renderonly {
-   struct renderonly_ops ops;
-};
-
 struct renderonly *
-renderonly_create(const struct renderonly_ops *ops);
+renderonly_create(const struct renderonly *ro);
 
 struct renderonly_scanout {
    uint32_t handle;

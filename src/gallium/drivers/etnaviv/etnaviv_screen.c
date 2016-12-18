@@ -710,7 +710,7 @@ etna_screen_bo_from_handle(struct pipe_screen *pscreen,
 
 struct pipe_screen *
 etna_screen_create(struct etna_device *dev, struct etna_gpu *gpu,
-                   struct renderonly_ops *ops)
+                   struct renderonly *ro)
 {
    struct etna_screen *screen = CALLOC_STRUCT(etna_screen);
    struct pipe_screen *pscreen;
@@ -722,7 +722,7 @@ etna_screen_create(struct etna_device *dev, struct etna_gpu *gpu,
    pscreen = &screen->base;
    screen->dev = dev;
    screen->gpu = gpu;
-   screen->ro = renderonly_create(ops);
+   screen->ro = renderonly_create(ro);
 
    if (!screen->ro) {
       DBG("could not create renderonly object");

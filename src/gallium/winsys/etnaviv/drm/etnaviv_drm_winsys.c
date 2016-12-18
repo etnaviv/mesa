@@ -36,14 +36,14 @@
 #include <stdio.h>
 
 static struct pipe_screen *
-screen_create(struct renderonly_ops *ops)
+screen_create(struct renderonly *ro)
 {
    struct etna_device *dev;
    struct etna_gpu *gpu;
    uint64_t val;
    int i;
 
-   dev = etna_device_new_dup(ops->gpu_fd);
+   dev = etna_device_new_dup(ro->gpu_fd);
    if (!dev) {
       fprintf(stderr, "Error creating device\n");
       return NULL;
@@ -64,7 +64,7 @@ screen_create(struct renderonly_ops *ops)
       etna_gpu_del(gpu);
    }
 
-   return etna_screen_create(dev, gpu, ops);
+   return etna_screen_create(dev, gpu, ro);
 }
 
 static struct util_hash_table *etna_tab = NULL;
@@ -114,9 +114,9 @@ static int compare_fd(void *key1, void *key2)
 }
 
 struct pipe_screen *
-etna_drm_screen_create_renderonly(struct renderonly_ops *ops)
+etna_drm_screen_create_renderonly(struct renderonly *ro)
 {
-   struct pipe_screen *pscreen;
+   struct pipe_screen *pscreen = NULL;
 
    pipe_mutex_lock(etna_screen_mutex);
    if (!etna_tab) {
@@ -125,11 +125,11 @@ etna_drm_screen_create_renderonly(struct renderonly_ops *ops)
            goto unlock;
    }
 
-   pscreen = util_hash_table_get(etna_tab, intptr_to_pointer(ops->gpu_fd));
+   pscreen = util_hash_table_get(etna_tab, intptr_to_pointer(ro->gpu_fd));
    if (pscreen) {
        etna_screen(pscreen)->refcnt++;
    } else {
-       pscreen = screen_create(ops);
+       pscreen = screen_create(ro);
        if (pscreen) {
            int fd = etna_device_fd(etna_screen(pscreen)->dev);
            util_hash_table_set(etna_tab, intptr_to_pointer(fd), pscreen);
@@ -151,10 +151,10 @@ unlock:
 struct pipe_screen *
 etna_drm_screen_create(int fd)
 {
-    struct renderonly_ops ro_ops = {
+    struct renderonly ro = {
        .kms_fd = -1,
        .gpu_fd = fd
     };
 
-    return etna_drm_screen_create_renderonly(&ro_ops);
+    return etna_drm_screen_create_renderonly(&ro);
 }
