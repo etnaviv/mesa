@@ -36,7 +36,7 @@
 #include <stdio.h>
 
 static struct pipe_screen *
-etna_drm_screen_create_renderonly(struct renderonly *ro)
+screen_create_renderonly(struct renderonly *ro)
 {
    struct etna_device *dev;
    struct etna_gpu *gpu;
@@ -72,7 +72,7 @@ etna_drm_screen_create_native(struct renderonly *ro)
 {
    struct pipe_screen *screen;
 
-   screen = etna_drm_screen_create_renderonly(ro);
+   screen = screen_create_renderonly(ro);
    if (!screen)
       return NULL;
 
@@ -84,7 +84,7 @@ etna_drm_screen_create_rendernode(struct renderonly *ro)
 {
    struct pipe_screen *screen;
 
-   screen = etna_drm_screen_create_renderonly(ro);
+   screen = screen_create_renderonly(ro);
    if (!screen) {
       close(ro->ops.gpu_fd);
       return NULL;
