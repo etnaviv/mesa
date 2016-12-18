@@ -36,6 +36,20 @@
 #include "pipe/p_screen.h"
 #include "util/u_memory.h"
 
+struct renderonly *
+renderonly_create(const struct renderonly_ops *ops)
+{
+   struct renderonly *ro;
+
+   ro = CALLOC_STRUCT(renderonly);
+   if (!ro)
+      return NULL;
+
+   memcpy(&ro->ops, ops, sizeof(*ops));
+
+   return ro;
+}
+
 struct pipe_screen *
 renderonly_screen_create(const struct renderonly_ops *ops)
 {

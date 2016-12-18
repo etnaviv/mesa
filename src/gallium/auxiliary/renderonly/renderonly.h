@@ -46,6 +46,9 @@ struct renderonly {
    struct pipe_screen *screen;
 };
 
+struct renderonly *
+renderonly_create(const struct renderonly_ops *ops);
+
 struct pipe_screen *
 renderonly_screen_create(const struct renderonly_ops *ops);
 
