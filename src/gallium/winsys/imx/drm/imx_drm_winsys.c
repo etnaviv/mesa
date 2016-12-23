@@ -34,7 +34,7 @@
 struct pipe_screen *imx_drm_screen_create(int fd)
 {
    struct renderonly ro = {
-      .intermediate_rendering = true,
+      .create_for_resource = renderonly_create_kms_dumb_buffer_for_resource,
       .kms_fd = fd,
       .gpu_fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC)
    };

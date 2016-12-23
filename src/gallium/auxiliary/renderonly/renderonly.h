@@ -32,8 +32,7 @@
 #include "pipe/p_state.h"
 
 struct renderonly {
-   int (*tiling)(int fd, uint32_t handle);
-   bool intermediate_rendering;
+   struct renderonly_scanout *(*create_for_resource)(struct pipe_resource *rsc, struct renderonly *ro);
    int kms_fd;
    int gpu_fd;
 };
@@ -48,8 +47,11 @@ struct renderonly_scanout {
    struct pipe_resource *prime;
 };
 
-struct renderonly_scanout *
-renderonly_scanout_for_resource(struct pipe_resource *rsc, struct renderonly *ro);
+static inline struct renderonly_scanout *
+renderonly_scanout_for_resource(struct pipe_resource *rsc, struct renderonly *ro)
+{
+   return ro->create_for_resource(rsc, ro);
+}
 
 struct renderonly_scanout *
 renderonly_scanout_for_prime(struct pipe_resource *rsc, struct renderonly *ro);
@@ -69,5 +71,13 @@ renderonly_get_handle(struct renderonly_scanout *scanout,
 
    return TRUE;
 }
+
+struct renderonly_scanout *
+renderonly_create_kms_dumb_buffer_for_resource(struct pipe_resource *rsc,
+                                               struct renderonly *ro);
+
+struct renderonly_scanout *
+renderonly_create_gpu_import_for_resource(struct pipe_resource *rsc,
+                                          struct renderonly *ro);
 
 #endif /* RENDERONLY_H_ */

@@ -50,123 +50,6 @@ renderonly_dup(const struct renderonly *ro)
    return copy;
 }
 
-static bool
-use_kms_bumb_buffer(struct renderonly_scanout *scanout,
-      struct pipe_resource *rsc, struct renderonly *ro)
-{
-   struct pipe_screen *screen = rsc->screen;
-   struct winsys_handle handle;
-   int prime_fd, err;
-   struct drm_mode_create_dumb create_dumb = {
-      .width = rsc->width0,
-      .height = rsc->height0,
-      .bpp = 32,
-   };
-   struct drm_mode_destroy_dumb destroy_dumb = { };
-
-   /* create dumb buffer at scanout GPU */
-   err = ioctl(ro->kms_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
-   if (err < 0) {
-      fprintf(stderr, "DRM_IOCTL_MODE_CREATE_DUMB failed: %s\n",
-            strerror(errno));
-      return false;
-   }
-
-   scanout->handle = create_dumb.handle;
-   scanout->stride = create_dumb.pitch;
-
-   /* export dumb buffer */
-   err = drmPrimeHandleToFD(ro->kms_fd, create_dumb.handle, O_CLOEXEC,
-         &prime_fd);
-   if (err < 0) {
-      fprintf(stderr, "failed to export dumb buffer: %s\n", strerror(errno));
-      goto out_free_dumb;
-   }
-
-   /* import dumb buffer */
-   handle.type = DRM_API_HANDLE_TYPE_FD;
-   handle.handle = prime_fd;
-   handle.stride = create_dumb.pitch;
-
-   scanout->prime = screen->resource_from_handle(screen, rsc,
-         &handle, PIPE_HANDLE_USAGE_READ_WRITE);
-
-   if (!scanout->prime) {
-      fprintf(stderr, "failed to create resource_from_handle: %s\n", strerror(errno));
-      goto out_free_dumb;
-   }
-
-   return true;
-
-out_free_dumb:
-   destroy_dumb.handle = scanout->handle;
-   ioctl(ro->kms_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
-
-   return false;
-}
-
-static bool
-import_gpu_scanout(struct renderonly_scanout *scanout,
-      struct pipe_resource *rsc, struct renderonly *ro)
-{
-   struct pipe_screen *screen = rsc->screen;
-   boolean status;
-   int fd, err;
-   struct winsys_handle handle = {
-      .type = DRM_API_HANDLE_TYPE_FD
-   };
-
-   status = screen->resource_get_handle(screen, NULL, rsc, &handle,
-         PIPE_HANDLE_USAGE_READ_WRITE);
-   if (!status)
-      return false;
-
-   scanout->stride = handle.stride;
-   fd = handle.handle;
-
-   err = drmPrimeFDToHandle(ro->kms_fd, fd, &scanout->handle);
-   close(fd);
-
-   if (err < 0) {
-      fprintf(stderr, "drmPrimeFDToHandle() failed: %s\n", strerror(errno));
-      return false;
-   }
-
-   if (ro->tiling) {
-      err = ro->tiling(ro->kms_fd, scanout->handle);
-      if (err < 0) {
-         fprintf(stderr, "failed to set tiling parameters: %s\n", strerror(errno));
-         close(scanout->handle);
-         return false;
-      }
-   }
-
-   return true;
-}
-
-struct renderonly_scanout *
-renderonly_scanout_for_resource(struct pipe_resource *rsc, struct renderonly *ro)
-{
-   struct renderonly_scanout *scanout;
-   bool ret;
-
-   scanout = CALLOC_STRUCT(renderonly_scanout);
-   if (!scanout)
-      return NULL;
-
-   if (ro->intermediate_rendering)
-       ret = use_kms_bumb_buffer(scanout, rsc, ro);
-   else
-       ret = import_gpu_scanout(scanout, rsc, ro);
-
-   if (!ret) {
-      FREE(scanout);
-      scanout = NULL;
-   }
-
-   return scanout;
-}
-
 struct renderonly_scanout *
 renderonly_scanout_for_prime(struct pipe_resource *rsc, struct renderonly *ro)
 {
@@ -187,3 +70,107 @@ renderonly_scanout_destroy(struct renderonly_scanout *scanout)
    close(scanout->handle);
    FREE(scanout);
 }
+
+struct renderonly_scanout *
+renderonly_create_kms_dumb_buffer_for_resource(struct pipe_resource *rsc,
+                                               struct renderonly *ro)
+{
+   struct pipe_screen *screen = rsc->screen;
+   struct renderonly_scanout *scanout;
+   struct winsys_handle handle;
+   int prime_fd, err;
+   struct drm_mode_create_dumb create_dumb = {
+      .width = rsc->width0,
+      .height = rsc->height0,
+      .bpp = 32,
+   };
+   struct drm_mode_destroy_dumb destroy_dumb = { };
+
+   scanout = CALLOC_STRUCT(renderonly_scanout);
+   if (!scanout)
+      return NULL;
+
+   /* create dumb buffer at scanout GPU */
+   err = ioctl(ro->kms_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
+   if (err < 0) {
+      fprintf(stderr, "DRM_IOCTL_MODE_CREATE_DUMB failed: %s\n",
+            strerror(errno));
+      goto free_scanout;
+   }
+
+   scanout->handle = create_dumb.handle;
+   scanout->stride = create_dumb.pitch;
+
+   /* export dumb buffer */
+   err = drmPrimeHandleToFD(ro->kms_fd, create_dumb.handle, O_CLOEXEC,
+         &prime_fd);
+   if (err < 0) {
+      fprintf(stderr, "failed to export dumb buffer: %s\n", strerror(errno));
+      goto free_dumb;
+   }
+
+   /* import dumb buffer */
+   handle.type = DRM_API_HANDLE_TYPE_FD;
+   handle.handle = prime_fd;
+   handle.stride = create_dumb.pitch;
+
+   scanout->prime = screen->resource_from_handle(screen, rsc,
+         &handle, PIPE_HANDLE_USAGE_READ_WRITE);
+
+   if (!scanout->prime) {
+      fprintf(stderr, "failed to create resource_from_handle: %s\n", strerror(errno));
+      goto free_dumb;
+   }
+
+   return scanout;
+
+free_dumb:
+   destroy_dumb.handle = scanout->handle;
+   ioctl(ro->kms_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+
+free_scanout:
+   FREE(scanout);
+
+   return NULL;
+}
+
+struct renderonly_scanout *
+renderonly_create_gpu_import_for_resource(struct pipe_resource *rsc,
+                                          struct renderonly *ro)
+{
+   struct pipe_screen *screen = rsc->screen;
+   struct renderonly_scanout *scanout;
+   boolean status;
+   int fd, err;
+   struct winsys_handle handle = {
+      .type = DRM_API_HANDLE_TYPE_FD
+   };
+
+   scanout = CALLOC_STRUCT(renderonly_scanout);
+   if (!scanout)
+      return NULL;
+
+   status = screen->resource_get_handle(screen, NULL, rsc, &handle,
+         PIPE_HANDLE_USAGE_READ_WRITE);
+   if (!status)
+      goto free_scanout;
+
+   scanout->stride = handle.stride;
+   fd = handle.handle;
+
+   err = drmPrimeFDToHandle(ro->kms_fd, fd, &scanout->handle);
+   close(fd);
+
+   if (err < 0) {
+      fprintf(stderr, "drmPrimeFDToHandle() failed: %s\n", strerror(errno));
+      goto free_scanout;
+   }
+
+   return scanout;
+
+free_scanout:
+   FREE(scanout);
+
+   return NULL;
+}
+
