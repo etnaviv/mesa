@@ -31,21 +31,41 @@
 #include "state_tracker/drm_driver.h"
 #include "pipe/p_state.h"
 
-struct renderonly {
-   struct renderonly_scanout *(*create_for_resource)(struct pipe_resource *rsc, struct renderonly *ro);
-   int kms_fd;
-   int gpu_fd;
-};
-
-struct renderonly *
-renderonly_dup(const struct renderonly *ro);
-
 struct renderonly_scanout {
    uint32_t handle;
    uint32_t stride;
 
    struct pipe_resource *prime;
 };
+
+struct renderonly {
+   /**
+    * Create a renderonly_scanout object for scanout resource.
+    *
+    * This function creates a renderonly_scanout object based on the provided
+    * resource. The library is designed that the driver specific pipe_resource
+    * struct holds a pointer to a renderonly_scanout struct.
+    *
+    * struct driver_resource {
+    *    struct pipe_resource base;
+    *    struct renderonly_scanout *scanout;
+    *   ...
+    * };
+    *
+    * The renderonly_scanout object exits for two reasons:
+    * - Do any special treatment for a scanout resource like importing the GPU
+    *   resource into the scanout hw.
+    * - Make it easier for a gallium driver to detect if anything special needs
+    *   to be done in flush_resource(..) like a resolve to linear.
+    */
+   struct renderonly_scanout *(*create_for_resource)(struct pipe_resource *rsc,
+                                                     struct renderonly *ro);
+   int kms_fd;
+   int gpu_fd;
+};
+
+struct renderonly *
+renderonly_dup(const struct renderonly *ro);
 
 static inline struct renderonly_scanout *
 renderonly_scanout_for_resource(struct pipe_resource *rsc, struct renderonly *ro)
@@ -72,10 +92,16 @@ renderonly_get_handle(struct renderonly_scanout *scanout,
    return TRUE;
 }
 
+/**
+ * Create a dumb buffer object for a resource at scanout hw.
+ */
 struct renderonly_scanout *
 renderonly_create_kms_dumb_buffer_for_resource(struct pipe_resource *rsc,
                                                struct renderonly *ro);
 
+/**
+ * Import GPU resource into scanout hw.
+ */
 struct renderonly_scanout *
 renderonly_create_gpu_import_for_resource(struct pipe_resource *rsc,
                                           struct renderonly *ro);
