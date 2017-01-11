@@ -1329,36 +1329,6 @@ trans_lrp(const struct instr_translater *t, struct etna_compile *c,
 }
 
 static void
-trans_sub(const struct instr_translater *t, struct etna_compile *c,
-          const struct tgsi_full_instruction *inst, struct etna_inst_src *src)
-{
-   struct etna_inst inst_out = {
-      .opcode = INST_OPCODE_ADD,
-      .sat = inst->Instruction.Saturate,
-      .dst = convert_dst(c, &inst->Dst[0]),
-      .src[0] = src[0],
-      .src[2] = src[1],
-   };
-
-   inst_out.src[2].neg = !inst_out.src[2].neg;
-   emit_inst(c, &inst_out);
-}
-
-static void
-trans_abs(const struct instr_translater *t, struct etna_compile *c,
-          const struct tgsi_full_instruction *inst, struct etna_inst_src *src)
-{
-   /* XXX can be propagated into uses of destination operand */
-   src[0].abs = 1;
-   emit_inst(c, &(struct etna_inst) {
-      .opcode = INST_OPCODE_MOV,
-      .sat = inst->Instruction.Saturate,
-      .dst = convert_dst(c, &inst->Dst[0]),
-      .src[2] = src[0],
-   });
-}
-
-static void
 trans_lit(const struct instr_translater *t, struct etna_compile *c,
           const struct tgsi_full_instruction *inst, struct etna_inst_src *src)
 {
@@ -1772,8 +1742,6 @@ static const struct instr_translater translaters[TGSI_OPCODE_LAST] = {
    INSTR(LIT, trans_lit),
    INSTR(SSG, trans_ssg),
    INSTR(DPH, trans_dph),
-   INSTR(SUB, trans_sub),
-   INSTR(ABS, trans_abs),
 
    INSTR(SIN, trans_trig),
    INSTR(COS, trans_trig),
