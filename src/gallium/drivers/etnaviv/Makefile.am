@@ -29,7 +29,7 @@ AM_CPPFLAGS = \
 	$(GALLIUM_DRIVER_CFLAGS) \
 	$(ETNAVIV_CFLAGS)
 
-libetnaviv_la_SOURCES = $(C_SOURCES) $(CPP_SOURCES)
+libetnaviv_la_SOURCES = $(C_SOURCES)
 
 noinst_PROGRAMS = etnaviv_compiler
 
