@@ -38,7 +38,7 @@ etnaviv_compiler_SOURCES = \
 
 etnaviv_compiler_LDADD = \
 	libetnaviv.la \
-	../../auxiliary/libgallium.la \
+	$(top_builddir)/src/gallium/auxiliary/libgallium.la \
 	$(top_builddir)/src/util/libmesautil.la \
 	$(GALLIUM_COMMON_LIB_DEPS) \
 	$(ETNAVIV_LIBS)
